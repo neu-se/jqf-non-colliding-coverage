@@ -49,6 +49,8 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReadEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.list.primitive.IntList;
 
 /**
  * A front-end that uses AFL for increasing performance counters
@@ -243,7 +245,7 @@ public class AFLPerformanceGuidance extends AFLGuidance {
                 for (int k = 0; k < branchCounts.size(); k++) {
                     // Put count at offset `k+1` integers into the bitmap
                     // since offset 0 is for the total
-                    feedback.putInt((k+1) * 4, branchCounts.getAtIndex(k));
+                    feedback.putInt((k+1) * 4, branchCounts.get(k));
                 }
                 // Also add the total instruction count
                 putTotalBranchCountIntoFeedback();
@@ -254,7 +256,7 @@ public class AFLPerformanceGuidance extends AFLGuidance {
                 for (int k = 0; k < allocCounts.size(); k++) {
                     // Put count at offset `k+1` integers into the bitmap
                     // since offset 0 is for the total
-                    feedback.putInt((k+1) * 4, allocCounts.getAtIndex(k));
+                    feedback.putInt((k+1) * 4, allocCounts.get(k));
                 }
             }
             break;
@@ -299,15 +301,12 @@ public class AFLPerformanceGuidance extends AFLGuidance {
      *                     one positive integer for each memory access
      * @return     the redundancy score
      */
-    public static double computeRedundancyScore(Collection<Integer> accessCounts) {
+    public static double computeRedundancyScore(IntList accessCounts) {
         double numCounts = accessCounts.size();
         if (numCounts == 0) {
             return 0.0;
         }
-        double sumCounts = 0.0;
-        for (int count : accessCounts) {
-            sumCounts += count;
-        }
+        double sumCounts = accessCounts.sum();
         double averageCounts = sumCounts / numCounts;
         double score = (averageCounts - 1)*(numCounts - 1)/sumCounts;
 

@@ -68,6 +68,9 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEventVisitor;
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.list.primitive.IntList;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import static java.lang.Math.ceil;
 import static java.lang.Math.log;
@@ -646,7 +649,7 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
             // Newly covered branches are always included.
             // Existing branches *may* be included, depending on the heuristics used.
             // A valid input will steal responsibility from invalid inputs
-            Set<Object> responsibilities = computeResponsibilities(valid);
+            IntHashSet responsibilities = computeResponsibilities(valid);
 
             // Update total coverage
             boolean coverageBitsUpdated = totalCoverage.updateBits(runCoverage);
@@ -743,18 +746,18 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
 
 
     // Compute a set of branches for which the current input may assume responsibility
-    private Set<Object> computeResponsibilities(boolean valid) {
-        Set<Object> result = new HashSet<>();
+    private IntHashSet computeResponsibilities(boolean valid) {
+        IntHashSet result = new IntHashSet();
 
         // This input is responsible for all new coverage
-        Collection<?> newCoverage = runCoverage.computeNewCoverage(totalCoverage);
+        IntList newCoverage = runCoverage.computeNewCoverage(totalCoverage);
         if (newCoverage.size() > 0) {
             result.addAll(newCoverage);
         }
 
         // If valid, this input is responsible for all new valid coverage
         if (valid) {
-            Collection<?> newValidCoverage = runCoverage.computeNewCoverage(validCoverage);
+            IntList newValidCoverage = runCoverage.computeNewCoverage(validCoverage);
             if (newValidCoverage.size() > 0) {
                 result.addAll(newValidCoverage);
             }
@@ -764,12 +767,12 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
         if (STEAL_RESPONSIBILITY) {
             int currentNonZeroCoverage = runCoverage.getNonZeroCount();
             int currentInputSize = currentInput.size();
-            Set<?> covered = new HashSet<>(runCoverage.getCovered());
+            IntHashSet covered = new IntHashSet(runCoverage.getCovered());
 
             // Search for a candidate to steal responsibility from
             candidate_search:
             for (Input candidate : savedInputs) {
-                Set<?> responsibilities = candidate.responsibilities;
+                IntHashSet responsibilities = candidate.responsibilities;
 
                 // Candidates with no responsibility are not interesting
                 if (responsibilities.isEmpty()) {
@@ -784,7 +787,9 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
                                 currentInputSize < candidate.size())) {
 
                     // Check if we can steal all responsibilities from candidate
-                    for (Object b : responsibilities) {
+                    IntIterator iter = responsibilities.intIterator();
+                    while(iter.hasNext()){
+                        int b = iter.next();
                         if (covered.contains(b) == false) {
                             // Cannot steal if this input does not cover something
                             // that the candidate is responsible for
@@ -812,7 +817,7 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
 
     }
 
-    private void saveCurrentInput(Set<Object> responsibilities, String why) throws IOException {
+    private void saveCurrentInput(IntHashSet responsibilities, String why) throws IOException {
 
         // First, save to disk (note: we issue IDs to everyone, but only write to disk  if valid)
         int newInputIdx = numSavedInputs++;
@@ -842,7 +847,9 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
 
         // Fourth, assume responsibility for branches
         currentInput.responsibilities = responsibilities;
-        for (Object b : responsibilities) {
+        IntIterator iter = responsibilities.intIterator();
+        while(iter.hasNext()){
+            int b = iter.next();
             // If there is an old input that is responsible,
             // subsume it
             Input oldResponsible = responsibleInputs.get(b);
@@ -855,6 +862,7 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
             // We are now responsible
             responsibleInputs.put(b, currentInput);
         }
+
 
         // Fifth, map executions to input locations for splicing
         mapEcToInputLoc(currentInput);
@@ -993,7 +1001,7 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
          * in at least some responsibility set. Hence, this list
          * needs to be kept in-sync with {@link #responsibleInputs}.</p>
          */
-        Set<Object> responsibilities = null;
+        IntHashSet responsibilities = null;
 
 
         /**

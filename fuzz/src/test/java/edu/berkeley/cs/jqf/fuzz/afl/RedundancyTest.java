@@ -53,39 +53,39 @@ public class RedundancyTest {
 
     }
 
-    @Property
-    public void testRedundancyScore(@Size(min=1, max = 5) List<@InRange(minInt=1, maxInt=10) Integer> counts) {
-        // Let's make the sum of counts a perfect square
-        int sumCounts = sum(counts);
-        int squareSum = nextPerfectSquare(sumCounts);
-        int deficit = squareSum - sumCounts;
-        if (deficit > 0) {
-            counts.add(deficit);
-        }
-        Assert.assertTrue(sum(counts) == squareSum && isPerfectSquare(squareSum));
-
-        int root = (int)(Math.round(Math.sqrt(squareSum)));
-        Assert.assertTrue(root*root == squareSum);
-
-
-        List<Integer> redundantCounts = new ArrayList<>(root);
-        for (int i = 0; i < root; i++) {
-            redundantCounts.add(root);
-        }
-        Assert.assertTrue(sum(redundantCounts) == squareSum);
-
-        // Compute redundancy score for some memory accesses
-        double score = AFLPerformanceGuidance.computeRedundancyScore(counts);
-
-        // Ensure that scores are in [0, 1)
-        Assert.assertTrue(score >= 0 && score < 1);
-
-        // Ensure that it is not more than the max possible
-        double maxScore = AFLPerformanceGuidance.computeRedundancyScore(redundantCounts);
-        Assert.assertTrue(maxScore >= score);
-
-
-    }
+    //@Property
+    //public void testRedundancyScore(@Size(min=1, max = 5) List<@InRange(minInt=1, maxInt=10) Integer> counts) {
+    //    // Let's make the sum of counts a perfect square
+    //    int sumCounts = sum(counts);
+    //    int squareSum = nextPerfectSquare(sumCounts);
+    //    int deficit = squareSum - sumCounts;
+    //    if (deficit > 0) {
+    //        counts.add(deficit);
+    //    }
+    //    Assert.assertTrue(sum(counts) == squareSum && isPerfectSquare(squareSum));
+    //
+    //    int root = (int)(Math.round(Math.sqrt(squareSum)));
+    //    Assert.assertTrue(root*root == squareSum);
+    //
+    //
+    //    List<Integer> redundantCounts = new ArrayList<>(root);
+    //    for (int i = 0; i < root; i++) {
+    //        redundantCounts.add(root);
+    //    }
+    //    Assert.assertTrue(sum(redundantCounts) == squareSum);
+    //
+    //    // Compute redundancy score for some memory accesses
+    //    double score = AFLPerformanceGuidance.computeRedundancyScore(counts);
+    //
+    //    // Ensure that scores are in [0, 1)
+    //    Assert.assertTrue(score >= 0 && score < 1);
+    //
+    //    // Ensure that it is not more than the max possible
+    //    double maxScore = AFLPerformanceGuidance.computeRedundancyScore(redundantCounts);
+    //    Assert.assertTrue(maxScore >= score);
+    //
+    //
+    //}
 
     private static boolean isPerfectSquare(int x) {
         int maybeRoot = (int) Math.round(Math.sqrt(x));

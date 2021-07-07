@@ -30,11 +30,16 @@ package edu.berkeley.cs.jqf.fuzz.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEventVisitor;
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.list.primitive.IntList;
+import org.eclipse.collections.api.tuple.primitive.IntIntPair;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 
 /**
  * Utility class to collect branch and function coverage
@@ -43,11 +48,11 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEventVisitor;
  */
 public class Coverage implements TraceEventVisitor {
 
-    /** The size of the coverage map. */
-    private final int COVERAGE_MAP_SIZE = (1 << 16) - 1; // Minus one to reduce collisions
+    /** The starting size of the coverage map. */
+    private final int COVERAGE_MAP_SIZE = (1 << 4);
 
     /** The coverage counts for each edge. */
-    private final Counter counter = new NonZeroCachingCounter(COVERAGE_MAP_SIZE);
+    private final Counter counter = new Counter(COVERAGE_MAP_SIZE);
 
     /** Creates a new coverage map. */
     public Coverage() {
@@ -60,9 +65,7 @@ public class Coverage implements TraceEventVisitor {
      * @param that the coverage map to copy
      */
     public Coverage(Coverage that) {
-        for (int idx = 0; idx < COVERAGE_MAP_SIZE; idx++) {
-            this.counter.setAtIndex(idx, that.counter.getAtIndex(idx));
-        }
+        this.counter.copyFrom(that.counter);
     }
 
     /**
@@ -110,20 +113,23 @@ public class Coverage implements TraceEventVisitor {
      *
      * @return a collection of keys that are covered
      */
-    public Collection<?> getCovered() {
-        return counter.getNonZeroIndices();
+    public IntList getCovered() {
+        return counter.getNonZeroKeys();
     }
 
 
-    public Collection<?> computeNewCoverage(Coverage baseline) {
-        Collection<Integer> newCoverage = new ArrayList<>();
-        for (int idx : this.counter.getNonZeroIndices()) {
-            if (baseline.counter.getAtIndex(idx) == 0) {
+    public IntList computeNewCoverage(Coverage baseline) {
+        IntArrayList newCoverage = new IntArrayList();
+
+        IntList baseNonZero = this.counter.getNonZeroKeys();
+        IntIterator iter = baseNonZero.intIterator();
+        while (iter.hasNext()) {
+            int idx = iter.next();
+            if (baseline.counter.get(idx) == 0) {
                 newCoverage.add(idx);
             }
         }
         return newCoverage;
-
     }
 
 
@@ -178,14 +184,18 @@ public class Coverage implements TraceEventVisitor {
      */
     public boolean updateBits(Coverage that) {
         boolean changed = false;
-        for (int idx = 0; idx < COVERAGE_MAP_SIZE; idx++) {
-            int before = this.counter.getAtIndex(idx);
-            int after = before | hob(that.counter.getAtIndex(idx));
-            if (after != before) {
-                this.counter.setAtIndex(idx, after);
+        Iterator<IntIntPair> thatIter = that.counter.counts.keyValuesView().iterator();
+
+        while(thatIter.hasNext()){
+            IntIntPair coverageEntry = thatIter.next();
+            int before = this.counter.counts.get(coverageEntry.getOne());
+            int after = before | hob(coverageEntry.getTwo());
+            if(after != before){
+                this.counter.counts.put(coverageEntry.getOne(), after);
                 changed = true;
             }
         }
+
         return changed;
     }
 

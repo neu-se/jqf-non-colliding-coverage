@@ -28,39 +28,41 @@
  */
 package edu.berkeley.cs.jqf.fuzz.util;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.iterator.MutableIntIterator;
+import org.eclipse.collections.api.list.primitive.IntList;
+import org.eclipse.collections.api.tuple.primitive.IntIntPair;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
+import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
+
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 /**
- * Maps integer keys to integer counts using a fixed-size table.
- *
- * <p>Hash collisions are completely ignored; therefore, the counts
- * are unreliable.</p>
+ * Maps integer keys to integer counts using a hash table.
  *
  * <p>Throughout the internal documentation, the term "key" is used
- * to refer to the keys that are hashed, while "index" is used to
- * the result of key-hashing, i.e. the location in the internal
- * array storage.</p>
+ * to refer to the keys that are hashed. We do not expose the index of
+ * those keys in the map. </p>
  *
- * @author Rohan Padhye
+ * @author Rohan Padhye (Initial version, had hash collisions)
+ * @author Jonathan Bell (Refactored to  Eclipse collections to resolve hash collisions)
+ *
  */
 public class Counter {
 
-    /** The size of the counter map. */
-    protected final int size;
-
-    /** The counter map as an array of integers. */
-    protected final int[] counts;
+    /** The counter map as a map of integers. */
+    protected IntIntHashMap counts;
 
     /**
      * Creates a new counter with given size.
      *
-     * @param size the fixed-number of elements in the hashtable.
+     * @param size the starting size of the hashtable.
      */
     public Counter(int size) {
-        this.size = size;
-        this.counts = new int[size];
+        this.counts = new IntIntHashMap(size);
     }
 
     /**
@@ -69,54 +71,43 @@ public class Counter {
      * @return the size of this counter
      */
     public int size() {
-        return this.size;
+        return this.counts.size();
     }
 
     /**
      * Clears the counter by setting all values to zero.
      */
     public void clear() {
-        for (int i = 0; i < counts.length; i++) {
-            this.counts[i] = 0;
-        }
-    }
-
-    private int idx(int key) {
-        return Hashing.hash(key, size);
-    }
-
-    protected int incrementAtIndex(int index, int delta) {
-        return (this.counts[index] += delta);
+        this.counts.clear();
     }
 
     /**
      * Increments the count at the given key.
      *
-     * <p>Note that the key is hashed and therefore the count
-     * to increment may be shared with another key that hashes
-     * to the same value. </p>
      *
      * @param key the key whose count to increment
      * @return the new value after incrementing the count
      */
     public int increment(int key) {
-        return incrementAtIndex(idx(key), 1);
+        int cur = this.counts.get(key);
+        int incr = cur + 1;
+        this.counts.put(key, incr);
+        return incr;
     }
 
     /**
      *
      * Increments the count at the given key by a given delta.
      *
-     * <p>Note that the key is hashed and therefore the count
-     * to increment may be shared with another key that hashes
-     * to the same value. </p>
-     *
      * @param key the key whose count to increment
      * @param delta the amount to increment by
      * @return the new value after incrementing the count
      */
     public int increment(int key, int delta) {
-        return incrementAtIndex(idx(key), delta);
+        int cur = this.counts.get(key);
+        int incr = cur + delta;
+        this.counts.put(key, incr);
+        return incr;
     }
 
     /**
@@ -126,9 +117,9 @@ public class Counter {
      */
     public int getNonZeroSize() {
         int size = 0;
-        for (int i = 0; i < counts.length; i++) {
-            int count = counts[i];
-            if (count != 0) {
+        MutableIntIterator iter = this.counts.values().intIterator();
+        while(iter.hasNext()){
+            if(iter.next() != 0){
                 size++;
             }
         }
@@ -137,23 +128,20 @@ public class Counter {
 
 
     /**
-     * Returns a set of indices at which the count is non-zero.
+     * Returns a set of keys at which the count is non-zero.
      *
-     * <p>Note that indices are different from keys, in that
-     * multiple keys can map to the same index due to hash
-     * collisions.</p>
-     *
-     * @return a set of indices at which the count is non-zero
+     * @return a set of keys at which the count is non-zero
      */
-    public Collection<Integer> getNonZeroIndices() {
-        List<Integer> indices = new ArrayList<>(size /2);
-        for (int i = 0; i < counts.length; i++) {
-            int count = counts[i];
-            if (count != 0) {
-                indices.add(i);
+    public IntList getNonZeroKeys() {
+        IntArrayList keys = new IntArrayList(this.counts.size()/2);
+        Iterator<IntIntPair> iter = this.counts.keyValuesView().iterator();
+        while(iter.hasNext()){
+            IntIntPair each  = iter.next();
+            if(each.getTwo() != 0){
+                keys.add(each.getOne());
             }
         }
-        return indices;
+        return keys;
     }
 
     /**
@@ -161,12 +149,13 @@ public class Counter {
      *
      * @return a set of non-zero count values in this counter.
      */
-    public Collection<Integer> getNonZeroValues() {
-        List<Integer> values = new ArrayList<>(size /2);
-        for (int i = 0; i < counts.length; i++) {
-            int count = counts[i];
-            if (count != 0) {
-                values.add(count);
+    public IntList getNonZeroValues() {
+        IntArrayList values = new IntArrayList(this.counts.size() / 2);
+        IntIterator iter = this.counts.values().intIterator();
+        while (iter.hasNext()) {
+            int val = iter.next();
+            if (val != 0) {
+                values.add(val);
             }
         }
         return values;
@@ -182,15 +171,11 @@ public class Counter {
      * @return the count for the index corresponding to this key
      */
     public int get(int key) {
-        return this.counts[idx(key)];
+        return this.counts.get(key);
     }
 
-
-    public int getAtIndex(int idx) {
-        return this.counts[idx];
+    public void copyFrom(Counter counter) {
+        this.counts = new IntIntHashMap(counter.counts);
     }
 
-    public void setAtIndex(int idx, int value) {
-        this.counts[idx] = value;
-    }
 }
