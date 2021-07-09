@@ -28,25 +28,24 @@
  */
 package edu.berkeley.cs.jqf.fuzz.util;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEventVisitor;
+import janala.instrument.CoverageListener;
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.list.primitive.IntList;
 import org.eclipse.collections.api.tuple.primitive.IntIntPair;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
+
+import java.util.Iterator;
 
 /**
  * Utility class to collect branch and function coverage
  *
  * @author Rohan Padhye
  */
-public class Coverage implements TraceEventVisitor {
+public class Coverage implements TraceEventVisitor, CoverageListener {
 
     /** The starting size of the coverage map. */
     private final int COVERAGE_MAP_SIZE = (1 << 4);
@@ -199,5 +198,12 @@ public class Coverage implements TraceEventVisitor {
         return changed;
     }
 
+    @Override
+    public void logCoverage(int iid, int arm) {
+        //WARNING: this "collision free" coverage might collide on case/switch statements!
+        //It would be nicer to just put an IID probe for each branch target, but this was the slightly less invasive fix
+        //(can't just put the probe at the target, need to log on the edge, so it's a bit trickier). - JSB
+        counter.increment((iid << 2) + arm);
+    }
 
 }

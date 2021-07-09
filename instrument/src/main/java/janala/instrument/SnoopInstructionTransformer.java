@@ -21,7 +21,7 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
   private static final String instDir = Config.instance.instrumentationCacheDir;
   private static final boolean verbose = Config.instance.verbose;
 
-  private static String[] banned = {"[", "java/lang", "org/eclipse/collections", "janala", "org/objectweb/asm", "sun", "jdk", "java/util/function"};
+  private static String[] banned = {"[", "java/lang", "org/eclipse/collections", "edu/berkeley/cs/jqf/fuzz/util", "janala", "org/objectweb/asm", "sun", "jdk", "java/util/function"};
   private static String[] excludes = Config.instance.excludeInst;;
   private static String[] includes = Config.instance.includeInst;
 
@@ -64,6 +64,8 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
 
   /** packages that should be exluded from the instrumentation */
   private static boolean shouldExclude(String cname) {
+    if(cname == null)
+      return true;
     for (String e : banned) {
       if (cname.startsWith(e)) {
         return true;
@@ -97,8 +99,8 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
         print("* ");
       }
       print("Instrumenting: " + cname + "... ");
-      GlobalStateForInstrumentation.instance.setCid(cname.hashCode());
 
+      // WARNING: If what you are instrumenting has multiple classes with the same name, you will hurt bad here!! - JSB
       if (instrumentedBytes.containsKey(cname)) {
         println(" Found in fast-cache!");
         return instrumentedBytes.get(cname);

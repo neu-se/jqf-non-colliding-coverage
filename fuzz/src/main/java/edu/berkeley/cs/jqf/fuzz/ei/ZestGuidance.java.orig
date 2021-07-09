@@ -64,7 +64,6 @@ import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
 import edu.berkeley.cs.jqf.fuzz.util.Coverage;
 import edu.berkeley.cs.jqf.fuzz.util.ProducerHashMap;
-import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
@@ -274,7 +273,6 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
         this.testName = testName;
         this.maxDurationMillis = duration != null ? duration.toMillis() : Long.MAX_VALUE;
         this.outputDirectory = outputDirectory;
-        SingleSnoop.setCoverageListener(runCoverage);
         this.blind = Boolean.getBoolean("jqf.ei.TOTALLY_RANDOM");
         prepareOutputDirectory();
 
@@ -345,7 +343,7 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
         }
 
         appendLineToFile(statsFile,"# unix_time, cycles_done, cur_path, paths_total, pending_total, " +
-                "pending_favs, unique_crashes, unique_hangs, max_depth, execs_per_sec, valid_inputs, invalid_inputs, valid_cov");
+                "pending_favs, map_size, unique_crashes, unique_hangs, max_depth, execs_per_sec, valid_inputs, invalid_inputs, valid_cov");
 
 
     }
@@ -446,13 +444,13 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
         console.printf("Queue size:           %,d (%,d favored last cycle)\n", savedInputs.size(), numFavoredLastCycle);
         console.printf("Current parent input: %s\n", currentParentInputDesc);
         console.printf("Execution speed:      %,d/sec now | %,d/sec overall\n", intervalExecsPerSec, execsPerSec);
-        console.printf("Total coverage:       %,d \n", nonZeroCount);
-        console.printf("Valid coverage:       %,d \n", nonZeroValidCount);
+        console.printf("Total coverage:       %,d (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
+        console.printf("Valid coverage:       %,d (%.2f%% of map)\n", nonZeroValidCount, nonZeroValidFraction);
 
-        String plotData = String.format("%d, %d, %d, %d, %d, %d, %d, %d, %d, %.2f, %d, %d",
+        String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d, %.2f%%",
                 TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx,
-                savedInputs.size(), 0, 0, uniqueFailures.size(), 0, 0, intervalExecsPerSecDouble,
-                numValid, numTrials-numValid);
+                savedInputs.size(), 0, 0, nonZeroFraction, uniqueFailures.size(), 0, 0, intervalExecsPerSecDouble,
+                numValid, numTrials-numValid, nonZeroValidFraction);
         appendLineToFile(statsFile, plotData);
 
     }

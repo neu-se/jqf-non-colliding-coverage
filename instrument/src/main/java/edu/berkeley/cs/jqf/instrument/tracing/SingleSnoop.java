@@ -29,15 +29,16 @@
 
 package edu.berkeley.cs.jqf.instrument.tracing;
 
+import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
+import edu.berkeley.cs.jqf.instrument.util.DoublyLinkedList;
+import janala.instrument.CoverageListener;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
-import edu.berkeley.cs.jqf.instrument.util.DoublyLinkedList;
 
 
 @SuppressWarnings("unused") // Dynamically loaded
@@ -49,7 +50,7 @@ public final class SingleSnoop {
     private static ThreadLocal<Boolean> block = new ThreadLocal<Boolean>() {
         @Override
         public Boolean initialValue() {
-        String threadName = Thread.currentThread().getName();
+            String threadName = Thread.currentThread().getName();
             if (threadName.startsWith("__JWIG_TRACER__")) {
                 return true; // Always block snooping on the tracing thread to prevent cycles
             } else if (threadsToUnblock.synchronizedRemove(Thread.currentThread())){
@@ -66,6 +67,17 @@ public final class SingleSnoop {
     /** A supplier of callbacks for each thread (does nothing by default). */
     static Function<Thread, Consumer<TraceEvent>> callbackGenerator = (t) -> (e) -> {};
 
+
+    static CoverageListener coverageListener = new CoverageListener() {
+        @Override
+        public void logCoverage(int iid, int arm) {
+
+        }
+    };
+
+    public static void setCoverageListener(CoverageListener coverageListener) {
+        SingleSnoop.coverageListener = coverageListener;
+    }
 
     private static TraceLogger intp = new TraceLogger();
 
@@ -1027,4 +1039,29 @@ public final class SingleSnoop {
     public static void flush() {
         intp.flush();
     }
+
+    public static void LOGJUMP(int iid, int branch) {
+        coverageListener.logCoverage(iid, branch);
+    }
+
+    public static void LOGLOOKUPSWITCH(int value, int iid, int dflt, int[] cases, int[] labels) {
+        // Compute arm index or else default
+        int arm = -1;
+        for (int i = 0; i < cases.length; i++) {
+            if (value == cases[i]) {
+                arm = i;
+                break;
+            }
+        }
+        coverageListener.logCoverage(iid, arm);
+    }
+
+    public static void LOGTABLESWITCH(int value, int iid, int min, int max, int dflt, int[] labels) {
+        int arm = -1;
+        if (value >= 0 && value < labels.length) {
+            arm = value;
+        }
+        coverageListener.logCoverage(iid, arm);
+    }
+
 }
