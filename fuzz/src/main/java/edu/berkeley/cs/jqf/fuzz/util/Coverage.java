@@ -91,12 +91,12 @@ public class Coverage implements TraceEventVisitor {
 
     @Override
     public void visitBranchEvent(BranchEvent b) {
-        counter.increment(b.getIid() * 31 + b.getArm());
+        counter.increment((b.getIid() << 2) + b.getArm());
     }
 
     @Override
     public void visitCallEvent(CallEvent e) {
-        counter.increment(e.getIid());
+        counter.increment((e.getIid() << 2) + 3);
     }
 
     /**
