@@ -70,14 +70,14 @@ public class Counter {
      *
      * @return the size of this counter
      */
-    public int size() {
+    public synchronized int size() {
         return this.counts.size();
     }
 
     /**
      * Clears the counter by setting all values to zero.
      */
-    public void clear() {
+    public synchronized void clear() {
         this.counts.clear();
     }
 
@@ -88,7 +88,7 @@ public class Counter {
      * @param key the key whose count to increment
      * @return the new value after incrementing the count
      */
-    public int increment(int key) {
+    public synchronized int increment(int key) {
         int cur = this.counts.get(key);
         int incr = cur + 1;
         this.counts.put(key, incr);
@@ -103,7 +103,7 @@ public class Counter {
      * @param delta the amount to increment by
      * @return the new value after incrementing the count
      */
-    public int increment(int key, int delta) {
+    public synchronized int increment(int key, int delta) {
         int cur = this.counts.get(key);
         int incr = cur + delta;
         this.counts.put(key, incr);
@@ -115,7 +115,7 @@ public class Counter {
      *
      * @return the number of indices with non-zero counts
      */
-    public int getNonZeroSize() {
+    public synchronized int getNonZeroSize() {
         int size = 0;
         MutableIntIterator iter = this.counts.values().intIterator();
         while(iter.hasNext()){
@@ -132,7 +132,7 @@ public class Counter {
      *
      * @return a set of keys at which the count is non-zero
      */
-    public IntList getNonZeroKeys() {
+    public synchronized IntList getNonZeroKeys() {
         IntArrayList keys = new IntArrayList(this.counts.size()/2);
         Iterator<IntIntPair> iter = this.counts.keyValuesView().iterator();
         while(iter.hasNext()){
@@ -149,7 +149,7 @@ public class Counter {
      *
      * @return a set of non-zero count values in this counter.
      */
-    public IntList getNonZeroValues() {
+    public synchronized IntList getNonZeroValues() {
         IntArrayList values = new IntArrayList(this.counts.size() / 2);
         IntIterator iter = this.counts.values().intIterator();
         while (iter.hasNext()) {
@@ -170,11 +170,11 @@ public class Counter {
      * @param key the key to query
      * @return the count for the index corresponding to this key
      */
-    public int get(int key) {
+    public synchronized  int get(int key) {
         return this.counts.get(key);
     }
 
-    public void copyFrom(Counter counter) {
+    public synchronized void copyFrom(Counter counter) {
         this.counts = new IntIntHashMap(counter.counts);
     }
 

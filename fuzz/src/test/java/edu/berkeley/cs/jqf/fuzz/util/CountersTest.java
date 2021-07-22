@@ -35,6 +35,7 @@ import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.list.primitive.IntList;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.junit.runner.RunWith;
 
 
@@ -116,7 +117,7 @@ public class CountersTest {
             counter.increment(key, delta);
         }
 
-        IntList nonZeroIndices = counter.getNonZeroKeys();
+        IntSet nonZeroIndices = counter.getNonZeroKeys();
         IntList nonZeroValues = counter.getNonZeroValues();
         assertEquals(nonZeroValues.size(), nonZeroIndices.size());
 

@@ -769,7 +769,8 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
         if (STEAL_RESPONSIBILITY) {
             int currentNonZeroCoverage = runCoverage.getNonZeroCount();
             int currentInputSize = currentInput.size();
-            IntHashSet covered = new IntHashSet(runCoverage.getCovered());
+            IntHashSet covered = new IntHashSet();
+            covered.addAll(runCoverage.getCovered());
 
             // Search for a candidate to steal responsibility from
             candidate_search:

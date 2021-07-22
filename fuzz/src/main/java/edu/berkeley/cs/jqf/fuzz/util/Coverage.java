@@ -48,7 +48,7 @@ import java.util.Iterator;
 public class Coverage implements TraceEventVisitor, CoverageListener {
 
     /** The starting size of the coverage map. */
-    private final int COVERAGE_MAP_SIZE = (1 << 4);
+    private final int COVERAGE_MAP_SIZE = (1 << 8);
 
     /** The coverage counts for each edge. */
     private final Counter counter = new Counter(COVERAGE_MAP_SIZE);
@@ -183,18 +183,21 @@ public class Coverage implements TraceEventVisitor, CoverageListener {
      */
     public boolean updateBits(Coverage that) {
         boolean changed = false;
-        Iterator<IntIntPair> thatIter = that.counter.counts.keyValuesView().iterator();
+        synchronized (this.counter) {
+            synchronized (that.counter) {
+                Iterator<IntIntPair> thatIter = that.counter.counts.keyValuesView().iterator();
 
-        while(thatIter.hasNext()){
-            IntIntPair coverageEntry = thatIter.next();
-            int before = this.counter.counts.get(coverageEntry.getOne());
-            int after = before | hob(coverageEntry.getTwo());
-            if(after != before){
-                this.counter.counts.put(coverageEntry.getOne(), after);
-                changed = true;
+                while (thatIter.hasNext()) {
+                    IntIntPair coverageEntry = thatIter.next();
+                    int before = this.counter.counts.get(coverageEntry.getOne());
+                    int after = before | hob(coverageEntry.getTwo());
+                    if (after != before) {
+                        this.counter.counts.put(coverageEntry.getOne(), after);
+                        changed = true;
+                    }
+                }
             }
         }
-
         return changed;
     }
 
@@ -203,7 +206,7 @@ public class Coverage implements TraceEventVisitor, CoverageListener {
         //WARNING: this "collision free" coverage might collide on case/switch statements!
         //It would be nicer to just put an IID probe for each branch target, but this was the slightly less invasive fix
         //(can't just put the probe at the target, need to log on the edge, so it's a bit trickier). - JSB
-        counter.increment((iid << 2) + arm);
+        counter.increment(iid + arm);
     }
 
 }
