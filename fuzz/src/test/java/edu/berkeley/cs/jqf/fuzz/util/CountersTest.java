@@ -117,7 +117,7 @@ public class CountersTest {
             counter.increment(key, delta);
         }
 
-        IntSet nonZeroIndices = counter.getNonZeroKeys();
+        IntList nonZeroIndices = counter.getNonZeroKeys();
         IntList nonZeroValues = counter.getNonZeroValues();
         assertEquals(nonZeroValues.size(), nonZeroIndices.size());
 
