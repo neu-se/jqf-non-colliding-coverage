@@ -191,6 +191,9 @@ public class Coverage implements TraceEventVisitor, CoverageListener {
                     IntIntPair coverageEntry = thatIter.next();
                     int before = this.counter.counts.get(coverageEntry.getOne());
                     int after = before | hob(coverageEntry.getTwo());
+                    if(before == 0){
+                        this.counter.nonZeroKeys.add(coverageEntry.getOne());
+                    }
                     if (after != before) {
                         this.counter.counts.put(coverageEntry.getOne(), after);
                         changed = true;

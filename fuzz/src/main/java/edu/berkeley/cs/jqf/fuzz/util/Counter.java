@@ -35,10 +35,7 @@ import org.eclipse.collections.api.tuple.primitive.IntIntPair;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * Maps integer keys to integer counts using a hash table.
@@ -56,6 +53,9 @@ public class Counter {
     /** The counter map as a map of integers. */
     protected IntIntHashMap counts;
 
+    /* List of indices in the map that are non-zero */
+    protected IntArrayList nonZeroKeys;
+
     /**
      * Creates a new counter with given size.
      *
@@ -63,6 +63,7 @@ public class Counter {
      */
     public Counter(int size) {
         this.counts = new IntIntHashMap(size);
+        this.nonZeroKeys = new IntArrayList(size / 2);
     }
 
     /**
@@ -79,6 +80,7 @@ public class Counter {
      */
     public synchronized void clear() {
         this.counts.clear();
+        this.nonZeroKeys.clear();
     }
 
     /**
@@ -89,10 +91,11 @@ public class Counter {
      * @return the new value after incrementing the count
      */
     public synchronized int increment(int key) {
-        int cur = this.counts.get(key);
-        int incr = cur + 1;
-        this.counts.put(key, incr);
-        return incr;
+        int newVal = this.counts.addToValue(key, 1);
+        if (newVal == 1) {
+            this.nonZeroKeys.add(key);
+        }
+        return newVal;
     }
 
     /**
@@ -104,10 +107,11 @@ public class Counter {
      * @return the new value after incrementing the count
      */
     public synchronized int increment(int key, int delta) {
-        int cur = this.counts.get(key);
-        int incr = cur + delta;
-        this.counts.put(key, incr);
-        return incr;
+        int newVal = this.counts.addToValue(key, delta);
+        if (newVal == delta) {
+            nonZeroKeys.add(key);
+        }
+        return newVal;
     }
 
     /**
@@ -116,14 +120,7 @@ public class Counter {
      * @return the number of indices with non-zero counts
      */
     public synchronized int getNonZeroSize() {
-        int size = 0;
-        MutableIntIterator iter = this.counts.values().intIterator();
-        while(iter.hasNext()){
-            if(iter.next() != 0){
-                size++;
-            }
-        }
-        return size;
+        return nonZeroKeys.size();
     }
 
 
@@ -133,15 +130,7 @@ public class Counter {
      * @return a set of keys at which the count is non-zero
      */
     public synchronized IntList getNonZeroKeys() {
-        IntArrayList keys = new IntArrayList(this.counts.size()/2);
-        Iterator<IntIntPair> iter = this.counts.keyValuesView().iterator();
-        while(iter.hasNext()){
-            IntIntPair each  = iter.next();
-            if(each.getTwo() != 0){
-                keys.add(each.getOne());
-            }
-        }
-        return keys;
+        return this.nonZeroKeys;
     }
 
     /**
@@ -176,6 +165,8 @@ public class Counter {
 
     public synchronized void copyFrom(Counter counter) {
         this.counts = new IntIntHashMap(counter.counts);
+        this.nonZeroKeys = new IntArrayList(counter.nonZeroKeys.size());
+        this.nonZeroKeys.addAll(counter.nonZeroKeys);
     }
 
 }
