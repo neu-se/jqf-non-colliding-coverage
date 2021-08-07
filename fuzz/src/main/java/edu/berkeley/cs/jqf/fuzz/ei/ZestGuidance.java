@@ -346,10 +346,29 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
             file.delete();
         }
 
-        appendLineToFile(statsFile,"# unix_time, cycles_done, cur_path, paths_total, pending_total, " +
+
+        statsWriter = new PrintWriter(new FileWriter(this.statsFile));
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if(statsWriter != null){
+                    statsWriter.flush();
+                    statsWriter.close();
+                }
+            }
+        }));
+
+        appendToStatsFile("# unix_time, cycles_done, cur_path, paths_total, pending_total, " +
                 "pending_favs, unique_crashes, unique_hangs, max_depth, execs_per_sec, valid_inputs, invalid_inputs, valid_cov");
 
 
+
+    }
+
+    static PrintWriter statsWriter;
+
+    private static void appendToStatsFile(String line){
+        statsWriter.println(line);
     }
 
     private void appendLineToFile(File file, String line) throws GuidanceException {
@@ -455,7 +474,7 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
                 TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx,
                 savedInputs.size(), 0, 0, uniqueFailures.size(), 0, 0, intervalExecsPerSecDouble,
                 numValid, numTrials-numValid);
-        appendLineToFile(statsFile, plotData);
+        appendToStatsFile(plotData);
 
     }
 
