@@ -359,7 +359,7 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
         }));
 
         appendToStatsFile("# unix_time, cycles_done, cur_path, paths_total, pending_total, " +
-                "pending_favs, unique_crashes, unique_hangs, max_depth, execs_per_sec, valid_inputs, invalid_inputs, valid_cov");
+                "pending_favs, unique_crashes, unique_hangs, max_depth, execs_per_sec, valid_inputs, invalid_inputs, all_cov");
 
 
 
@@ -473,7 +473,7 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
         String plotData = String.format("%d, %d, %d, %d, %d, %d, %d, %d, %d, %.2f, %d, %d",
                 TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx,
                 savedInputs.size(), 0, 0, uniqueFailures.size(), 0, 0, intervalExecsPerSecDouble,
-                numValid, numTrials-numValid);
+                numValid, numTrials-numValid, nonZeroCount);
         appendToStatsFile(plotData);
 
     }

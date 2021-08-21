@@ -30,6 +30,7 @@
 package edu.berkeley.cs.jqf.fuzz.repro;
 
 import java.io.File;
+import java.util.ArrayList;
 
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 
@@ -47,10 +48,23 @@ public class ReproDriver {
 
         String testClassName  = args[0];
         String testMethodName = args[1];
-        File[] testInputFiles = new File[args.length - 2];
-        for (int i = 0; i < testInputFiles.length; i++) {
-            testInputFiles[i] = new File(args[i+2]);
+        File[] testInputFiles;
+        ArrayList<File> validFiles = new ArrayList<>();
+        for (int i = 0; i < args.length - 2; i++) {
+            File inputArg = new File(args[i + 2]);
+            if (inputArg.isDirectory()) {
+                for (File f : inputArg.listFiles()) {
+                    if (f.getName().endsWith(".input"))
+                        continue;
+                    validFiles.add(f);
+                }
+            } else {
+                validFiles.add(inputArg);
+            }
         }
+        testInputFiles = new File[validFiles.size()];
+        testInputFiles = validFiles.toArray(testInputFiles);
+
 
         try {
             // Maybe log the trace
