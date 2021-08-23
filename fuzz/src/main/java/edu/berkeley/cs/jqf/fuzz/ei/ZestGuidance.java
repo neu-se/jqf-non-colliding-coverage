@@ -28,34 +28,7 @@
  */
 package edu.berkeley.cs.jqf.fuzz.ei;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.Console;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.time.Duration;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-
+import com.sun.org.apache.bcel.internal.classfile.JavaClass;
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Prefix;
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Suffix;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
@@ -74,6 +47,19 @@ import org.eclipse.collections.api.iterator.ShortIterator;
 import org.eclipse.collections.api.list.primitive.IntList;
 import org.eclipse.collections.impl.list.mutable.primitive.ShortArrayList;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+import org.w3c.dom.Document;
+
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.*;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import static java.lang.Math.ceil;
 import static java.lang.Math.log;
@@ -750,6 +736,15 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
                     String saveFileName = String.format("id_%06d", crashIdx);
                     File saveFile = new File(savedFailuresDirectory, saveFileName);
                     writeCurrentInputToFile(saveFile);
+
+                    File traceFile = new File(savedFailuresDirectory, saveFileName + ".trace");
+                    try (PrintWriter pw = new PrintWriter(new FileWriter(traceFile))) {
+                        error.printStackTrace(pw);
+                    }
+                    File argsFile = new File(savedFailuresDirectory, saveFileName + ".input");
+                    for (Object o : args)
+                        saveInputToDisk(argsFile, o);
+
                     infoLog("%s","Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
                     String how = currentInput.desc;
                     String why = result == Result.FAILURE ? "+crash" : "+hang";
@@ -850,6 +845,44 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
 
     }
 
+    private Object[] args;
+    @Override
+    public void setArgs(Object[] args) {
+        this.args = args;
+    }
+
+    private void saveInputToDisk(File f, Object o) throws IOException {
+        if (o instanceof Document) {
+            try {
+                TransformerFactory tf = TransformerFactory.newInstance();
+                Transformer transformer = null;
+                transformer = tf.newTransformer();
+                transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+                transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+                transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+                transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+
+                try (PrintWriter pw = new PrintWriter(new FileWriter(f))) {
+                    transformer.transform(new DOMSource((Document) o), new StreamResult(pw));
+                }
+            } catch (TransformerException e) {
+                e.printStackTrace();
+            }
+        } else if (o instanceof JavaClass) {
+            JavaClass jc = (JavaClass) o;
+            jc.dump(f);
+        } else {
+            try (PrintWriter pw = new PrintWriter(new FileWriter(f))) {
+                pw.println(o.toString());
+            }
+        }
+    }
+
+
+
+
+
     private void saveCurrentInput(IntHashSet responsibilities, String why) throws IOException {
 
         // First, save to disk (note: we issue IDs to everyone, but only write to disk  if valid)
@@ -861,6 +894,10 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
             writeCurrentInputToFile(saveFile);
             infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
         }
+
+        File inputFile = new File(savedInputsDirectory, saveFileName + ".input");
+        for (Object o : args)
+            saveInputToDisk(inputFile, o);
 
         // If not using guidance, do nothing else
         if (blind) {

@@ -108,6 +108,8 @@ public interface Guidance {
      */
     boolean hasInput();
 
+    default void setArgs(Object[] args) { /* empty */ }
+
     /**
      * Handles the end of a fuzzing trial.
      *
