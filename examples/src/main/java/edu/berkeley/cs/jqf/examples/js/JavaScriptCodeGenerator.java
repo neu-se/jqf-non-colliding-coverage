@@ -91,7 +91,9 @@ public class JavaScriptCodeGenerator extends Generator<String> {
 
     private static <T> List<T> generateItems(Function<SourceOfRandomness, T> generator, SourceOfRandomness random,
                                              double mean) {
-        int len = sampleGeometric(random, mean);
+        //int len = sampleGeometric(random, mean);
+        int len = random.nextInt((int) (mean*2)); // Generate random number in [0, mean*2)
+
         List<T> items = new ArrayList<>(len);
         for (int i = 0; i < len; i++) {
             items.add(generator.apply(random));

@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import com.pholser.junit.quickcheck.From;
+import com.pholser.junit.quickcheck.generator.Size;
 import edu.berkeley.cs.jqf.examples.xml.XMLDocumentUtils;
 import edu.berkeley.cs.jqf.examples.xml.XmlDocumentGenerator;
 import edu.berkeley.cs.jqf.examples.common.Dictionary;
@@ -63,6 +64,7 @@ public class ModelReaderTest {
 
     @Fuzz
     public void testWithGenerator(@From(XmlDocumentGenerator.class)
+                                      @Size(min = 0, max = 10) //The default max depth is 4, but Maven XML files can be deeper...
                                       @Dictionary("dictionaries/maven-model.dict") Document dom) {
         testWithInputStream(XMLDocumentUtils.documentToInputStream(dom));
     }

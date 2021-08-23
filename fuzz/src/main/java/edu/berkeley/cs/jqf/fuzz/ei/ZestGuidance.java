@@ -182,7 +182,7 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
     // ---------- LOGGING / STATS OUTPUT ------------
 
     /** Whether to print log statements to stderr (debug option; manually edit). */
-    private final boolean verbose = true;
+    private final boolean verbose = false;
 
     /** A system console, which is non-null only if STDOUT is a console. */
     private final Console console = System.console();
