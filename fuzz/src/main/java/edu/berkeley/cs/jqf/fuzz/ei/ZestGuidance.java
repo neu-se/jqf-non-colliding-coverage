@@ -456,7 +456,7 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
         console.printf("Total coverage:       %,d \n", nonZeroCount);
         console.printf("Valid coverage:       %,d \n", nonZeroValidCount);
 
-        String plotData = String.format("%d, %d, %d, %d, %d, %d, %d, %d, %d, %.2f, %d, %d",
+        String plotData = String.format("%d, %d, %d, %d, %d, %d, %d, %d, %d, %.2f, %d, %d, %d",
                 TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx,
                 savedInputs.size(), 0, 0, uniqueFailures.size(), 0, 0, intervalExecsPerSecDouble,
                 numValid, numTrials-numValid, nonZeroCount);
