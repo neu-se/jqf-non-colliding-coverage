@@ -30,6 +30,7 @@
 package edu.berkeley.cs.jqf.fuzz.ei;
 
 import java.io.File;
+import java.time.Duration;
 
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 
@@ -58,12 +59,16 @@ public class ZestDriver {
             }
         }
 
+        Duration d = null;
+        if (System.getProperty("time") != null)
+            d = Duration.ofSeconds(Long.parseLong(System.getProperty("time")));
+
         try {
             // Load the guidance
             String title = testClassName+"#"+testMethodName;
             ZestGuidance guidance = seedFiles != null ?
-                    new ZestGuidance(title, null, outputDirectory, seedFiles) :
-                    new ZestGuidance(title, null, outputDirectory);
+                    new ZestGuidance(title, d, outputDirectory, seedFiles) :
+                    new ZestGuidance(title, d, outputDirectory);
 
             // Ensure that generators are being traced
             if (!ZestGuidance.DISABLE_EXECUTION_INDEXING) {

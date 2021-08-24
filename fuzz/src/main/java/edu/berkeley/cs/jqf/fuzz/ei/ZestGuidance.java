@@ -249,6 +249,8 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
     /** Probability of splicing in getOrGenerateFresh() */
     static final double DEMAND_DRIVEN_SPLICING_PROBABILITY = 0;
 
+    static final int UNIQUE_SENSITIVITY = Integer.getInteger("jqf.ei.UNIQUE_SENSITIVITY", 3);
+
     /**
      * @param testName the name of test to display on the status screen
      * Creates a new execution-index-parametric guidance.
@@ -728,7 +730,17 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
             }
 
             // Attempt to add this to the set of unique failures
-            if (uniqueFailures.add(Arrays.asList(rootCause.getStackTrace()))) {
+            StackTraceElement[] root = rootCause.getStackTrace();
+            StackTraceElement[] trace;
+
+            if (root.length < UNIQUE_SENSITIVITY) {
+                trace = root;
+            } else {
+                trace = new StackTraceElement[Math.min(UNIQUE_SENSITIVITY, root.length)];
+                System.arraycopy(root, 0, trace, 0, trace.length);
+            }
+
+            if (uniqueFailures.add(Arrays.asList(trace))) {
 
                 // Save crash to disk
                 try {
@@ -896,8 +908,10 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
         }
 
         File inputFile = new File(savedInputsDirectory, saveFileName + ".input");
-        for (Object o : args)
-            saveInputToDisk(inputFile, o);
+
+        if(args != null)
+            for (Object o : args)
+                saveInputToDisk(inputFile, o);
 
         // If not using guidance, do nothing else
         if (blind) {
